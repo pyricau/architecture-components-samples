@@ -52,6 +52,7 @@ dependencies {
     implementation deps.core_ktx
     implementation deps.constraint_layout
     implementation deps.arch_core.runtime
+    implementation 'com.squareup.curtains:curtains:1.1'
 
     // Navigation
     implementation deps.navigation.runtime_ktx

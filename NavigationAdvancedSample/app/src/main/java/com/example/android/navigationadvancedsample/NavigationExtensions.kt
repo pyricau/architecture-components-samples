@@ -25,6 +25,9 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavController
 import androidx.navigation.fragment.NavHostFragment
+import com.example.android.navigationadvancedsample.perf.ImmediateFragmentViewUpdateRunner
+import com.example.android.navigationadvancedsample.perf.OnTxCommitFragmentViewUpdateRunner
+import com.example.android.navigationadvancedsample.perf.ActionTracker
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 /**
@@ -91,6 +94,12 @@ fun BottomNavigationView.setupWithNavController(
         } else {
             val newlySelectedItemTag = graphIdToTagMap[item.itemId]
             if (selectedItemTag != newlySelectedItemTag) {
+                // If we're moving to the first tab with no backstack then this was triggered
+                // by pressing back which triggers popBackStackImmediate before this listener
+                // triggers.
+                val backStackAlreadyPopped = fragmentManager.backStackEntryCount == 0 &&
+                  // Back always navigates back to the first tab.
+                  newlySelectedItemTag == firstFragmentTag
                 // Pop everything above the first fragment (the "fixed start destination")
                 fragmentManager.popBackStack(firstFragmentTag,
                     FragmentManager.POP_BACK_STACK_INCLUSIVE)
@@ -121,6 +130,14 @@ fun BottomNavigationView.setupWithNavController(
                         .setReorderingAllowed(true)
                         .commit()
                 }
+                ActionTracker.reportTapAction(
+                  actionName = selectedFragment.navController.currentDestination!!.label.toString(),
+                  viewUpdateRunner = if (backStackAlreadyPopped) {
+                      ImmediateFragmentViewUpdateRunner(selectedFragment)
+                  } else {
+                      OnTxCommitFragmentViewUpdateRunner(selectedFragment)
+                  }
+                )
                 selectedItemTag = newlySelectedItemTag
                 isOnFirstFragment = selectedItemTag == firstFragmentTag
                 selectedNavController.value = selectedFragment.navController
