@@ -26,6 +26,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
+        android:name="com.example.android.navigationadvancedsample.ExampleApplication"
         tools:ignore="GoogleAppIndexingWarning">
         <activity android:name="com.example.android.navigationadvancedsample.MainActivity">
             <intent-filter>
