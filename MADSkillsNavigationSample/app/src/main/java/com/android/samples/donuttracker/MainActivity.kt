@@ -16,9 +16,14 @@
 package com.android.samples.donuttracker
 
 import android.os.Bundle
+import android.os.Debug
+import android.os.Handler
+import android.os.Looper
+import android.view.Choreographer
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
+import android.view.MotionEvent
 import androidx.appcompat.app.AppCompatActivity
 import com.android.samples.donuttracker.databinding.ActivityMainBinding
 
@@ -52,5 +57,37 @@ class MainActivity : AppCompatActivity() {
             R.id.action_settings -> true
             else -> super.onOptionsItemSelected(item)
         }
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        when (ev.action) {
+            MotionEvent.ACTION_DOWN -> {
+                Debug.startMethodTracingSampling(
+                        // This stores in the external storage, e.g.
+                        // /sdcard/Android/data/com.android.samples.navdonutcreator/files/1624811076892.trace
+                        "${System.currentTimeMillis()}.trace",
+                        // 50Mb max file size
+                        50 * 1024 * 1024,
+                        // Every 1 ms
+                        1000
+                )
+            }
+            MotionEvent.ACTION_UP -> {
+                val handler = Handler(Looper.getMainLooper())
+                // Fires right before View click listener
+                handler.post {
+                    // Run when fragment navigation transaction executes
+                    supportFragmentManager.beginTransaction().runOnCommit {
+                        // Stop right AFTER the next frame is done.
+                        Choreographer.getInstance().postFrameCallback {
+                            handler.postAtFrontOfQueue {
+                                Debug.stopMethodTracing()
+                            }
+                        }
+                    }.commit()
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev)
     }
 }
