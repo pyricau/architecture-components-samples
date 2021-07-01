@@ -16,9 +16,10 @@
 package com.android.samples.donuttracker
 
 import android.os.Bundle
-import android.view.LayoutInflater
-import android.view.Menu
-import android.view.MenuItem
+import android.os.Debug
+import android.os.Handler
+import android.os.Looper
+import android.view.*
 import androidx.appcompat.app.AppCompatActivity
 import com.android.samples.donuttracker.databinding.ActivityMainBinding
 
@@ -36,6 +37,30 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
 
         Notifier.init(this)
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        when(ev?.action) {
+            MotionEvent.ACTION_DOWN -> {
+                Debug.startMethodTracingSampling("${System.currentTimeMillis()}.trace",
+                50*1024*1024,
+                1000)
+            }
+            MotionEvent.ACTION_UP -> {
+                val handler = Handler(Looper.getMainLooper())
+                handler.post {
+                    supportFragmentManager.beginTransaction().runOnCommit {
+                        Choreographer.getInstance().postFrameCallback {
+                            handler.postAtFrontOfQueue {
+                                Debug.stopMethodTracing()
+                            }
+                        }
+                    }.commit()
+
+                }
+            }
+        }
+        return super.dispatchTouchEvent(ev)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
